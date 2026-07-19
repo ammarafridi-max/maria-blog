@@ -2,12 +2,17 @@
 
 import React from 'react';
 import { Editor } from '@tinymce/tinymce-react';
-const TINYMCE_API_KEY = process.env.NEXT_PUBLIC_TINYMCE_API_KEY ?? '';
+
+// Self-hosted (GPL) TinyMCE loaded from jsDelivr. This avoids tiny.cloud's
+// API-key + approved-domain validation, so the editor works on any deployment
+// domain without a NEXT_PUBLIC_TINYMCE_API_KEY.
+const TINYMCE_SRC = 'https://cdn.jsdelivr.net/npm/tinymce@7/tinymce.min.js';
 
 export default function TinyEditor({ initialValue, disabled = false, editorRef }) {
   return (
     <Editor
-      apiKey={TINYMCE_API_KEY}
+      tinymceScriptSrc={TINYMCE_SRC}
+      licenseKey="gpl"
       onInit={(_evt, editor) => {
         editorRef.current = editor;
         if (initialValue) {
@@ -16,6 +21,7 @@ export default function TinyEditor({ initialValue, disabled = false, editorRef }
       }}
       initialValue={initialValue || ''}
       init={{
+        license_key: 'gpl',
         height: 500,
         menubar: false,
         plugins: 'anchor autolink charmap code codesample emoticons image link lists media searchreplace table visualblocks wordcount',

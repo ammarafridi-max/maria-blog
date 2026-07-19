@@ -1,0 +1,24 @@
+# Fly.io config for maria-blog-backend
+# Deploy from the maria-blog repo root with:
+#   flyctl deploy -c fly.maria-blog-backend.toml
+
+app = "maria-blog-backend"
+primary_region = "fra"
+
+[build]
+  dockerfile = "maria-blog-backend/Dockerfile"
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3001"

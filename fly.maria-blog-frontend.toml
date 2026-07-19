@@ -1,0 +1,32 @@
+# Fly.io config for maria-blog-frontend
+# Deploy from the maria-blog repo root with:
+#   flyctl deploy -c fly.maria-blog-frontend.toml
+#
+# NEXT_PUBLIC_* are baked at build time via build args below. If the backend or
+# public domain changes, update these and redeploy.
+
+app = "maria-blog-frontend"
+primary_region = "fra"
+
+[build]
+  dockerfile = "maria-blog-frontend/Dockerfile"
+
+  [build.args]
+    NEXT_PUBLIC_BACKEND_URL = "https://maria-blog-backend.fly.dev"
+    NEXT_PUBLIC_SITE_URL = "https://maria-blog-frontend.fly.dev"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+
+[env]
+  NODE_ENV = "production"
+  HOSTNAME = "0.0.0.0"
+  PORT = "3000"

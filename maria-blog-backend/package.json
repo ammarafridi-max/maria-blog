@@ -1,0 +1,33 @@
+{
+  "name": "maria-blog-backend",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "NODE_ENV=development node --env-file=.env.development --watch src/server.js",
+    "start": "node --env-file=.env.production src/server.js",
+    "seed-admin:dev": "node --env-file=.env.development scripts/seed-admin.js",
+    "seed-admin:prod": "node --env-file=.env.production scripts/seed-admin.js",
+    "seed-users:dev": "node --env-file=.env.development scripts/seed-users.js",
+    "seed-users:prod": "node --env-file=.env.production scripts/seed-users.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.9.0",
+    "compression": "^1.8.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "8.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "slugify": "^1.6.6",
+    "validator": "^13.12.0"
+  },
+  "engines": {
+    "node": "22.x"
+  }
+}

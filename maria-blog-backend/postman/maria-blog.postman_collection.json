@@ -1,0 +1,554 @@
+{
+  "info": {
+    "_postman_id": "b1a7c0de-0000-4a00-9a00-maria0blog001",
+    "name": "Maria Blog API",
+    "description": "All maria-blog-backend endpoints (auth, admin users, blogs, blog tags).\n\nAuth uses an httpOnly `jwt` cookie. Run **Auth > Login** first; Postman's cookie jar stores the cookie for `{{baseUrl}}` and sends it automatically on every protected request (use the Postman desktop app so the cookie jar is active).\n\nHandy collection variables are auto-filled by test scripts: logging in sets `adminUsername`; creating a blog/tag sets `blogId`/`blogSlug`/`tagId`.\n\nSet `baseUrl` to your running backend (defaults to http://localhost:3001).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] },
+            "description": "Liveness probe. Returns { status: 'ok', brand: 'maria-blog' }."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const res = pm.response.json();",
+                  "  if (res && res.data && res.data.username) {",
+                  "    pm.collectionVariables.set('adminUsername', res.data.username);",
+                  "  }",
+                  "  pm.test('logged in', () => pm.expect(res.status).to.eql('success'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ammar.afridi95@gmail.com\",\n  \"password\": \"Obaid123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+            "description": "Authenticate an admin. Sets the httpOnly `jwt` cookie used by every protected route."
+          },
+          "response": []
+        },
+        {
+          "name": "Get current admin (auth/me)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "auth", "me"] },
+            "description": "Returns the logged-in admin (from the cookie)."
+          },
+          "response": []
+        },
+        {
+          "name": "Update current admin (auth/me)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ammar Afridi\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "auth", "me"] },
+            "description": "Update your own name/email. Only `name` and `email` are allowed."
+          },
+          "response": []
+        },
+        {
+          "name": "Update password",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"passwordCurrent\": \"Obaid123\",\n  \"password\": \"NewPass123\",\n  \"passwordConfirm\": \"NewPass123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/update-password", "host": ["{{baseUrl}}"], "path": ["api", "auth", "update-password"] },
+            "description": "Change your own password. Re-issues the cookie."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"] },
+            "description": "Clears the `jwt` cookie."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin Users",
+      "item": [
+        {
+          "name": "List admin users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin-users?search=&role=&status=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin-users"],
+              "query": [
+                { "key": "search", "value": "" },
+                { "key": "role", "value": "", "description": "admin | blog-manager" },
+                { "key": "status", "value": "", "description": "ACTIVE | INACTIVE" }
+              ]
+            },
+            "description": "Admin only. Lists admin users with optional filters."
+          },
+          "response": []
+        },
+        {
+          "name": "Create admin user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const res = pm.response.json();",
+                  "  if (res.data && res.data.username) pm.collectionVariables.set('adminUsername', res.data.username);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Writer\",\n  \"username\": \"testwriter1\",\n  \"email\": \"writer@example.com\",\n  \"password\": \"WriterPass123\",\n  \"role\": \"blog-manager\",\n  \"status\": \"ACTIVE\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/admin-users", "host": ["{{baseUrl}}"], "path": ["api", "admin-users"] },
+            "description": "Admin only. Role must be `admin` or `blog-manager`. Username: 8-50 chars, lowercase letters/numbers/.-_"
+          },
+          "response": []
+        },
+        {
+          "name": "Get admin user by username",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/admin-users/{{adminUsername}}", "host": ["{{baseUrl}}"], "path": ["api", "admin-users", "{{adminUsername}}"] },
+            "description": "Admin only."
+          },
+          "response": []
+        },
+        {
+          "name": "Update admin user by username",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\",\n  \"role\": \"blog-manager\",\n  \"status\": \"ACTIVE\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/admin-users/{{adminUsername}}", "host": ["{{baseUrl}}"], "path": ["api", "admin-users", "{{adminUsername}}"] },
+            "description": "Admin only. Send any of name/email/role/status."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin set user password",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"ResetPass123\",\n  \"passwordConfirm\": \"ResetPass123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/admin-users/{{adminUsername}}/password", "host": ["{{baseUrl}}"], "path": ["api", "admin-users", "{{adminUsername}}", "password"] },
+            "description": "Admin only. Resets another user's password without their current one."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete admin user by username",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/admin-users/{{adminUsername}}", "host": ["{{baseUrl}}"], "path": ["api", "admin-users", "{{adminUsername}}"] },
+            "description": "Admin only. Cannot delete yourself or the last active admin."
+          },
+          "response": []
+        },
+        {
+          "name": "Get my profile (admin-users/me)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/admin-users/me", "host": ["{{baseUrl}}"], "path": ["api", "admin-users", "me"] },
+            "description": "Any authenticated admin."
+          },
+          "response": []
+        },
+        {
+          "name": "Update my profile (admin-users/me)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ammar Afridi\",\n  \"email\": \"ammar.afridi95@gmail.com\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/admin-users/me", "host": ["{{baseUrl}}"], "path": ["api", "admin-users", "me"] },
+            "description": "Any authenticated admin."
+          },
+          "response": []
+        },
+        {
+          "name": "Update my password (admin-users/me/password)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"passwordCurrent\": \"Obaid123\",\n  \"password\": \"NewPass123\",\n  \"passwordConfirm\": \"NewPass123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/admin-users/me/password", "host": ["{{baseUrl}}"], "path": ["api", "admin-users", "me", "password"] },
+            "description": "Any authenticated admin."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Blogs",
+      "item": [
+        {
+          "name": "List published blogs (public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/blogs?page=1&limit=9&tag=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "blogs"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "9" },
+                { "key": "tag", "value": "", "description": "filter by tag name" }
+              ]
+            },
+            "description": "Public. Only published posts."
+          },
+          "response": []
+        },
+        {
+          "name": "Get published blog by slug (public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/blogs/slug/{{blogSlug}}", "host": ["{{baseUrl}}"], "path": ["api", "blogs", "slug", "{{blogSlug}}"] },
+            "description": "Public."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin list blogs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/blogs/admin/list?page=1&limit=10&status=&search=&tag=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "blogs", "admin", "list"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "status", "value": "", "description": "draft | published | scheduled" },
+                { "key": "search", "value": "" },
+                { "key": "tag", "value": "" }
+              ]
+            },
+            "description": "admin / blog-manager. All statuses."
+          },
+          "response": []
+        },
+        {
+          "name": "Create blog",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const res = pm.response.json();",
+                  "  if (res.data && res.data._id) pm.collectionVariables.set('blogId', res.data._id);",
+                  "  if (res.data && res.data.slug) pm.collectionVariables.set('blogSlug', res.data.slug);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "title", "value": "Five Ways to Ease Lower Back Pain", "type": "text" },
+                { "key": "slug", "value": "", "type": "text", "description": "optional; auto-generated from title" },
+                { "key": "content", "value": "<p>Lower back pain is common and usually settles with the right movement.</p><h2>Keep moving</h2><p>Gentle walking beats bed rest for most people.</p>", "type": "text" },
+                { "key": "excerpt", "value": "Simple, practical steps to ease everyday lower back pain.", "type": "text" },
+                { "key": "quickAnswer", "value": "Keep moving gently, break up long sitting, and build back to normal activity.", "type": "text" },
+                { "key": "status", "value": "draft", "type": "text", "description": "draft | published | scheduled" },
+                { "key": "tags", "value": "Back Pain", "type": "text", "description": "repeat this key for multiple tags; must already exist" },
+                { "key": "metaTitle", "value": "", "type": "text" },
+                { "key": "metaDescription", "value": "", "type": "text" },
+                { "key": "faqs", "value": "[{\"question\":\"Should I rest completely?\",\"answer\":\"Gentle movement usually helps more than bed rest.\"}]", "type": "text", "description": "JSON array string" },
+                { "key": "scheduledAt", "value": "", "type": "text", "description": "ISO date, required when status=scheduled" },
+                { "key": "coverImage", "type": "file", "src": [], "description": "required when status is published/scheduled" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/blogs", "host": ["{{baseUrl}}"], "path": ["api", "blogs"] },
+            "description": "admin / blog-manager. Multipart form. Attach a file to `coverImage`. Tags must already exist (create them first)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get blog by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/blogs/{{blogId}}", "host": ["{{baseUrl}}"], "path": ["api", "blogs", "{{blogId}}"] },
+            "description": "admin / blog-manager."
+          },
+          "response": []
+        },
+        {
+          "name": "Update blog",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "title", "value": "Five Ways to Ease Lower Back Pain (updated)", "type": "text" },
+                { "key": "content", "value": "<p>Updated content.</p>", "type": "text" },
+                { "key": "status", "value": "draft", "type": "text" },
+                { "key": "newCoverImage", "type": "file", "src": [], "description": "optional new cover image" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/blogs/{{blogId}}", "host": ["{{baseUrl}}"], "path": ["api", "blogs", "{{blogId}}"] },
+            "description": "admin / blog-manager. Multipart. All fields optional; cover file field is `newCoverImage`."
+          },
+          "response": []
+        },
+        {
+          "name": "Publish blog",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/blogs/{{blogId}}/publish", "host": ["{{baseUrl}}"], "path": ["api", "blogs", "{{blogId}}", "publish"] },
+            "description": "admin / blog-manager. Sets status=published now."
+          },
+          "response": []
+        },
+        {
+          "name": "Duplicate blog",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/blogs/{{blogId}}/duplicate", "host": ["{{baseUrl}}"], "path": ["api", "blogs", "{{blogId}}", "duplicate"] },
+            "description": "admin / blog-manager. Creates a draft copy."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete blog",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/blogs/{{blogId}}", "host": ["{{baseUrl}}"], "path": ["api", "blogs", "{{blogId}}"] },
+            "description": "admin / blog-manager."
+          },
+          "response": []
+        },
+        {
+          "name": "Improve content (AI)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Five Ways to Ease Lower Back Pain\",\n  \"content\": \"<p>back pain is bad. you should move. it helps a lot.</p>\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/blogs/improve-content", "host": ["{{baseUrl}}"], "path": ["api", "blogs", "improve-content"] },
+            "description": "admin / blog-manager. Requires ANTHROPIC_API_KEY on the server (else 503)."
+          },
+          "response": []
+        },
+        {
+          "name": "Generate cover image (AI)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Five Ways to Ease Lower Back Pain\",\n  \"excerpt\": \"Simple steps to ease back pain.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/blogs/generate-cover", "host": ["{{baseUrl}}"], "path": ["api", "blogs", "generate-cover"] },
+            "description": "admin / blog-manager. Requires RECRAFT_API_KEY on the server (else 503). Returns an image (webp) body."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Blog Tags",
+      "item": [
+        {
+          "name": "List tags (public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/blog-tags?search=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "blog-tags"],
+              "query": [{ "key": "search", "value": "" }]
+            },
+            "description": "Public. Includes usageCount per tag."
+          },
+          "response": []
+        },
+        {
+          "name": "Get tag by slug (public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/blog-tags/slug/{{tagSlug}}", "host": ["{{baseUrl}}"], "path": ["api", "blog-tags", "slug", "{{tagSlug}}"] },
+            "description": "Public."
+          },
+          "response": []
+        },
+        {
+          "name": "Get tag by id (public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/blog-tags/{{tagId}}", "host": ["{{baseUrl}}"], "path": ["api", "blog-tags", "{{tagId}}"] },
+            "description": "Public."
+          },
+          "response": []
+        },
+        {
+          "name": "Create tag",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const res = pm.response.json();",
+                  "  if (res.data && res.data._id) pm.collectionVariables.set('tagId', res.data._id);",
+                  "  if (res.data && res.data.slug) pm.collectionVariables.set('tagSlug', res.data.slug);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Back Pain\",\n  \"description\": \"Easing and preventing lower back pain.\",\n  \"metaTitle\": \"\",\n  \"metaDescription\": \"\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/blog-tags", "host": ["{{baseUrl}}"], "path": ["api", "blog-tags"] },
+            "description": "admin / blog-manager. Slug auto-generated from name."
+          },
+          "response": []
+        },
+        {
+          "name": "Update tag",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Lower Back Pain\",\n  \"description\": \"Updated description.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/blog-tags/{{tagId}}", "host": ["{{baseUrl}}"], "path": ["api", "blog-tags", "{{tagId}}"] },
+            "description": "admin / blog-manager. Renaming a tag updates it on all posts."
+          },
+          "response": []
+        },
+        {
+          "name": "Duplicate tag",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/blog-tags/{{tagId}}/duplicate", "host": ["{{baseUrl}}"], "path": ["api", "blog-tags", "{{tagId}}", "duplicate"] },
+            "description": "admin / blog-manager."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete tag",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/blog-tags/{{tagId}}", "host": ["{{baseUrl}}"], "path": ["api", "blog-tags", "{{tagId}}"] },
+            "description": "admin / blog-manager. Also removes the tag from all posts."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3001" },
+    { "key": "adminUsername", "value": "ammarafridi" },
+    { "key": "blogId", "value": "" },
+    { "key": "blogSlug", "value": "ease-lower-back-pain" },
+    { "key": "tagId", "value": "" },
+    { "key": "tagSlug", "value": "back-pain" }
+  ]
+}
